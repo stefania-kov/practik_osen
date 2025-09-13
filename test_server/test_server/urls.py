@@ -20,7 +20,7 @@ from test_site import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.index, name='index'), 
-    path('', views.catalog, name='catalog'),
-    path('', views.contacts, name='contacts'),
+    path('', views.index, name='index'),           # Главная страница
+    path('catalog/', views.catalog, name='catalog'),   # Страница каталога
+    path('contacts/', views.contacts, name='contacts'),  # Страница контактов
 ]
