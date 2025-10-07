@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<style>
+    .product-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+        align-items: start;
+    }
+    .product-image {
+        width: 100%;
+        border-radius: 8px;
+    }
+    .product-info {
+        padding: 20px 0;
+    }
+    .product-name {
+        font-size: 2em;
+        margin-bottom: 10px;
+    }
+    .product-price {
+        font-size: 1.5em;
+        color: #e44d26;
+        font-weight: bold;
+        margin-bottom: 20px;
+    }
+    .product-specs {
+        margin: 20px 0;
+    }
+    .spec-item {
+        margin: 10px 0;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+    .spec-label {
+        font-weight: bold;
+        color: #666;
+    }
+    .add-to-cart {
+        background-color: #e44d26;
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        font-size: 1.1em;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 20px;
+    }
+    .add-to-cart:hover {
+        background-color: #d1401f;
+    }
+    .back-link {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: #666;
+        text-decoration: none;
+    }
+    .back-link:hover {
+        color: #333;
+    }
+</style>
+
+<div style="max-width: 1000px; margin: 0 auto; padding: 20px;">
+    <a href="{% url 'catalog' %}" class="back-link">← Назад в каталог</a>
+</div>
+
+<div class="product-container">
+    <!-- Изображение товара -->
+    <div>
+        {% if product.image %}
+        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image">
+        {% else %}
+        <div style="background: #f0f0f0; height: 400px; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+            Нет изображения
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Информация о товаре -->
+    <div class="product-info">
+        <h1 class="product-name">{{ product.name }}</h1>
+        <div class="product-price">{{ product.price }} ₽</div>
+        
+        <div class="product-specs">
+            <div class="spec-item">
+                <span class="spec-label">Категория:</span>
+                <span>{{ product.category.name }}</span>
+            </div>
+            <div class="spec-item">
+                <span class="spec-label">Страна-производитель:</span>
+                <span>{{ product.country }}</span>
+            </div>
+            <div class="spec-item">
+                <span class="spec-label">Год выпуска:</span>
+                <span>{{ product.production_year }}</span>
+            </div>
+            <div class="spec-item">
+                <span class="spec-label">Модель:</span>
+                <span>{{ product.model }}</span>
+            </div>
+            <div class="spec-item">
+                <span class="spec-label">Наличие:</span>
+                <span style="color: green;">✓ В наличии</span>
+            </div>
+        </div>
+
+        <button class="add-to-cart">В корзину</button>
+    </div>
+</div>
+
+<script>
+    document.querySelector('.add-to-cart').addEventListener('click', function() {
+        // Здесь можно добавить логику добавления в корзину
+        alert('Товар добавлен в корзину!');
+        // Пример добавления в localStorage
+        const productData = {
+            id: '{{ product.id }}',
+            name: '{{ product.name }}',
+            price: '{{ product.price }}',
+            image: '{% if product.image %}{{ product.image.url }}{% endif %}'
+        };
+        console.log('Добавлен товар:', productData);
+    });
+</script>
+{% endblock %}

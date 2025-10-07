@@ -17,12 +17,18 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from test_site import views
+from django.conf import settings
+from django.conf.urls.static import static  # Добавьте этот импорт
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.index, name='index'),           # Главная страница
-    path('catalog/', views.catalog, name='catalog'),   # Страница каталога
-    path('contacts/', views.contacts, name='contacts'),  # Страница контактов
+    path('', views.index, name='index'),
+    path('catalog/', views.catalog, name='catalog'),
+    path('contacts/', views.contacts, name='contacts'),
     path('register/', views.register_view, name='register'),
     path('login/', views.login_view, name='login'),
+    path('product/<slug:slug>/', views.product_detail, name='product_detail'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

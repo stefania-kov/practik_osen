@@ -2,67 +2,73 @@
 
 {% block content %}
     <style>
-        .error { color: red; font-size: 12px; }
-        .form-group { margin-bottom: 15px; }
+        .error { 
+            color: red; 
+            font-size: 12px; 
+            margin-top: 5px;
+        }
     </style>
-<body>
+
     <div class="container text-center my-5">
         <h1 class="display-4 fw-light" style="color: #2c3e50;">Регистрация</h1>
     </div>
-    <form id="registrationForm" method="post">
-        {% csrf_token %}
-        
-        <div class="form-group">
-            <label>Имя*</label>
-            {{ form.name }}
-            <div class="error" id="name-error"></div>
-        </div>
+    
+    <div class="form-container">
+        <form id="registrationForm" method="post">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label class="form-label">Имя*</label>
+                {{ form.name }}
+                <div class="error" id="name-error"></div>
+            </div>
 
-        <div class="form-group">
-            <label>Фамилия*</label>
-            {{ form.surname }}
-            <div class="error" id="surname-error"></div>
-        </div>
+            <div class="mb-3">
+                <label class="form-label">Фамилия*</label>
+                {{ form.surname }}
+                <div class="error" id="surname-error"></div>
+            </div>
 
-        <div class="form-group">
-            <label>Отчество</label>
-            {{ form.patronymic }}
-            <div class="error" id="patronymic-error"></div>
-        </div>
+            <div class="mb-3">
+                <label class="form-label">Отчество</label>
+                {{ form.patronymic }}
+                <div class="error" id="patronymic-error"></div>
+            </div>
 
-        <div class="form-group">
-            <label>Логин*</label>
-            {{ form.login }}
-            <div class="error" id="login-error"></div>
-        </div>
+            <div class="mb-3">
+                <label class="form-label">Логин*</label>
+                {{ form.login }}
+                <div class="error" id="login-error"></div>
+            </div>
 
-        <div class="form-group">
-            <label>Email*</label>
-            {{ form.email }}
-            <div class="error" id="email-error"></div>
-        </div>
+            <div class="mb-3">
+                <label class="form-label">Email*</label>
+                {{ form.email }}
+                <div class="error" id="email-error"></div>
+            </div>
 
-        <div class="form-group">
-            <label>Пароль*</label>
-            {{ form.password1 }}
-            <div class="error" id="password1-error"></div>
-        </div>
+            <div class="mb-3">
+                <label class="form-label">Пароль*</label>
+                {{ form.password1 }}
+                <div class="error" id="password1-error"></div>
+            </div>
 
-        <div class="form-group">
-            <label>Повторите пароль*</label>
-            {{ form.password2 }}
-            <div class="error" id="password2-error"></div>
-        </div>
+            <div class="mb-3">
+                <label class="form-label">Повторите пароль*</label>
+                {{ form.password2 }}
+                <div class="error" id="password2-error"></div>
+            </div>
 
-        <div class="form-group">
-            <label>
-                {{ form.rules }} Я согласен с правилами регистрации
-            </label>
-            <div class="error" id="rules-error"></div>
-        </div>
+            <div class="mb-3 form-check">
+                <label class="form-check-label">
+                    {{ form.rules }} Я согласен с правилами регистрации
+                </label>
+                <div class="error" id="rules-error"></div>
+            </div>
 
-        <button type="submit">Зарегистрироваться</button>
-    </form>
+            <button type="submit" class="btn btn-primary w-100">Зарегистрироваться</button>
+        </form>
+    </div>
 
     <script>
     document.getElementById('registrationForm').addEventListener('submit', async function(e) {
@@ -82,10 +88,8 @@
         if (result.success) {
             window.location.href = result.redirect_url;
         } else {
-            // Очистка предыдущих ошибок
             document.querySelectorAll('.error').forEach(el => el.textContent = '');
             
-            // Вывод новых ошибок
             for (const [field, errors] of Object.entries(result.errors)) {
                 const errorElement = document.getElementById(`${field}-error`);
                 if (errorElement) {
@@ -94,6 +98,18 @@
             }
         }
     });
+
+    // Добавляем классы Bootstrap ко всем полям
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputs = document.querySelectorAll('input:not([type="checkbox"])');
+        inputs.forEach(input => {
+            input.classList.add('form-control');
+        });
+        
+        const checkbox = document.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+            checkbox.classList.add('form-check-input');
+        }
+    });
     </script>
 {% endblock %}
-    
