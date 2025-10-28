@@ -57,6 +57,16 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'contacts' %}">Контакты</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'cart_view' %}">
+                            Корзина 
+                            {% if user.is_authenticated %}
+                                <span class="badge bg-primary" id="cart-count">
+                                    {{ user.cart.get_total_quantity|default:0 }}
+                                </span>
+                            {% endif %}
+                        </a>
+                    </li>
                 </ul>
                 
                 <div class="d-flex">

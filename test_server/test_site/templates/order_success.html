@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}Заказ успешно создан - Fashion Store{% endblock %}
+
+{% block content %}
+<div class="container text-center my-5">
+    <div class="alert alert-success">
+        <h2>Заказ успешно создан!</h2>
+        <p>Номер вашего заказа: <strong>#{{ order.id }}</strong></p>
+        <p>Общая стоимость: <strong>{{ order.total_price }} руб.</strong></p>
+        <p>Статус: <strong>{{ order.get_status_display }}</strong></p>
+    </div>
+    <a href="{% url 'catalog' %}" class="btn btn-primary">Продолжить покупки</a>
+</div>
+{% endblock %}

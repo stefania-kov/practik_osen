@@ -16,6 +16,8 @@
     .product-image {
         width: 100%;
         border-radius: 8px;
+        max-height: 500px;
+        object-fit: cover;
     }
     .product-info {
         padding: 20px 0;
@@ -37,6 +39,8 @@
         margin: 10px 0;
         padding: 8px 0;
         border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
     }
     .spec-label {
         font-weight: bold;
@@ -51,18 +55,64 @@
         border-radius: 4px;
         cursor: pointer;
         margin-top: 20px;
+        width: 100%;
+        transition: background-color 0.3s;
     }
     .add-to-cart:hover {
         background-color: #d1401f;
+    }
+    .add-to-cart:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
     }
     .back-link {
         display: inline-block;
         margin-bottom: 20px;
         color: #666;
         text-decoration: none;
+        padding: 8px 16px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        transition: all 0.3s;
     }
     .back-link:hover {
         color: #333;
+        background-color: #f5f5f5;
+    }
+    .quantity-selector {
+        margin: 20px 0;
+    }
+    .quantity-label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+    }
+    .quantity-input {
+        width: 80px;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1em;
+    }
+    .message {
+        padding: 12px;
+        margin: 15px 0;
+        border-radius: 4px;
+        display: none;
+    }
+    .success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    .error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    .description {
+        margin: 20px 0;
+        line-height: 1.6;
     }
 </style>
 
@@ -76,7 +126,7 @@
         {% if product.image %}
         <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image">
         {% else %}
-        <div style="background: #f0f0f0; height: 400px; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+        <div style="background: #f0f0f0; height: 400px; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: #666;">
             Нет изображения
         </div>
         {% endif %}
@@ -86,6 +136,13 @@
     <div class="product-info">
         <h1 class="product-name">{{ product.name }}</h1>
         <div class="product-price">{{ product.price }} ₽</div>
+        
+        {% if product.description %}
+        <div class="description">
+            <h3>Описание</h3>
+            <p>{{ product.description }}</p>
+        </div>
+        {% endif %}
         
         <div class="product-specs">
             <div class="spec-item">
@@ -106,26 +163,202 @@
             </div>
             <div class="spec-item">
                 <span class="spec-label">Наличие:</span>
-                <span style="color: green;">✓ В наличии</span>
+                {% if product.in_stock and product.stock > 0 %}
+                    <span style="color: green;">✓ В наличии ({{ product.stock }} шт.)</span>
+                {% else %}
+                    <span style="color: red;">✗ Нет в наличии</span>
+                {% endif %}
             </div>
         </div>
 
-        <button class="add-to-cart">В корзину</button>
+        {% if user.is_authenticated %}
+            {% if product.in_stock and product.stock > 0 %}
+            <div class="quantity-selector">
+                <label for="quantity" class="quantity-label">Количество:</label>
+                <input type="number" class="quantity-input" id="quantity" value="1" min="1" max="{{ product.stock }}">
+            </div>
+
+            <button type="button" class="add-to-cart" id="addToCartBtn">
+                Добавить в корзину
+            </button>
+            {% else %}
+            <button class="add-to-cart" disabled>
+                Товар недоступен
+            </button>
+            {% endif %}
+        {% else %}
+            <a href="{% url 'login' %}?next={{ request.path }}" class="add-to-cart" style="text-decoration: none; text-align: center; display: block;">
+                Войдите, чтобы добавить в корзину
+            </a>
+        {% endif %}
+
+        <div id="message" class="message"></div>
     </div>
 </div>
 
 <script>
-    document.querySelector('.add-to-cart').addEventListener('click', function() {
-        // Здесь можно добавить логику добавления в корзину
-        alert('Товар добавлен в корзину!');
-        // Пример добавления в localStorage
-        const productData = {
-            id: '{{ product.id }}',
-            name: '{{ product.name }}',
-            price: '{{ product.price }}',
-            image: '{% if product.image %}{{ product.image.url }}{% endif %}'
-        };
-        console.log('Добавлен товар:', productData);
-    });
+document.addEventListener('DOMContentLoaded', function() {
+    const addToCartBtn = document.getElementById('addToCartBtn');
+    const quantityInput = document.getElementById('quantity');
+    const messageDiv = document.getElementById('message');
+
+    if (addToCartBtn && !addToCartBtn.disabled) {
+        addToCartBtn.addEventListener('click', async function() {
+            await addToCart();
+        });
+    }
+
+    async function addToCart() {
+        const quantity = quantityInput ? parseInt(quantityInput.value) : 1;
+        const productId = '{{ product.id }}';
+        const maxStock = parseInt('{{ product.stock }}');
+
+        // Валидация количества
+        if (quantity < 1) {
+            showMessage('Количество должно быть не менее 1', 'error');
+            return;
+        }
+
+        if (quantity > maxStock) {
+            showMessage(`Недостаточно товара в наличии. Доступно: ${maxStock} шт.`, 'error');
+            return;
+        }
+
+        // Показываем загрузку
+        addToCartBtn.disabled = true;
+        addToCartBtn.textContent = 'Добавляем...';
+
+        try {
+            // Отправляем запрос на сервер
+            const response = await fetch('{% url "add_to_cart" product.id %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: `quantity=${quantity}`
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showMessage(result.message || 'Товар успешно добавлен в корзину!', 'success');
+                
+                // Обновляем счетчик корзины в навигации
+                updateCartBadge(result.cart_items_count);
+                
+                // Обновляем доступное количество
+                updateProductStock(quantity);
+                
+            } else {
+                showMessage(result.error || 'Произошла ошибка при добавлении в корзину', 'error');
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            showMessage('Произошла ошибка при добавлении в корзину', 'error');
+        } finally {
+            addToCartBtn.disabled = false;
+            addToCartBtn.textContent = 'Добавить в корзину';
+        }
+    }
+
+    // Функция обновления счетчика корзины
+    function updateCartBadge(count) {
+        // Ищем все возможные элементы счетчика корзины
+        const badges = [
+            document.getElementById('cart-badge'),
+            document.querySelector('.cart-badge'),
+            document.querySelector('.cart-count'),
+            document.querySelector('[class*="cart-badge"]'),
+            document.querySelector('[class*="cart-count"]')
+        ];
+
+        badges.forEach(badge => {
+            if (badge) {
+                badge.textContent = count;
+                badge.style.display = count > 0 ? 'flex' : 'none';
+            }
+        });
+    }
+
+    // Функция обновления информации о наличии
+    function updateProductStock(addedQuantity) {
+        if (quantityInput) {
+            const currentStock = parseInt('{{ product.stock }}');
+            const newStock = currentStock - addedQuantity;
+            
+            quantityInput.max = newStock;
+            
+            if (newStock <= 0) {
+                // Товар закончился
+                addToCartBtn.disabled = true;
+                addToCartBtn.textContent = 'Товар недоступен';
+                
+                // Обновляем отображение наличия
+                const stockElement = document.querySelector('.spec-item:last-child span:last-child');
+                if (stockElement) {
+                    stockElement.innerHTML = '<span style="color: red;">✗ Нет в наличии</span>';
+                }
+            } else if (quantityInput.value > newStock) {
+                quantityInput.value = newStock;
+            }
+        }
+    }
+
+    // Функция показа сообщений
+    function showMessage(text, type) {
+        if (messageDiv) {
+            messageDiv.textContent = text;
+            messageDiv.className = 'message ' + type;
+            messageDiv.style.display = 'block';
+            
+            // Автоматически скрываем через 4 секунды
+            setTimeout(function() {
+                messageDiv.style.display = 'none';
+            }, 4000);
+        }
+    }
+
+    // Функция получения CSRF токена
+    function getCSRFToken() {
+        // Пытаемся найти CSRF токен в форме
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (csrfToken) {
+            return csrfToken.value;
+        }
+        
+        // Ищем в cookies
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+            
+        return cookieValue || '';
+    }
+
+    // Обработка изменения количества
+    if (quantityInput) {
+        quantityInput.addEventListener('change', function() {
+            let value = parseInt(this.value);
+            const max = parseInt(this.max);
+            const min = parseInt(this.min);
+            
+            if (isNaN(value) || value < min) {
+                this.value = min;
+            } else if (value > max) {
+                this.value = max;
+                showMessage(`Максимальное количество: ${max} шт.`, 'error');
+            }
+        });
+        
+        quantityInput.addEventListener('input', function() {
+            let value = parseInt(this.value);
+            if (isNaN(value) || value < 1) {
+                this.value = 1;
+            }
+        });
+    }
+});
 </script>
 {% endblock %}

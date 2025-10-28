@@ -7,6 +7,11 @@
             font-size: 12px; 
             margin-top: 5px;
         }
+        .form-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+        }
     </style>
 
     <div class="container text-center my-5">
@@ -71,31 +76,57 @@
     </div>
 
     <script>
+    // Функция для получения CSRF токена
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
     document.getElementById('registrationForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const formData = new FormData(this);
-        const response = await fetch('{% url "register" %}', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
+        const csrfToken = getCookie('csrftoken');
         
-        const result = await response.json();
-        
-        if (result.success) {
-            window.location.href = result.redirect_url;
-        } else {
-            document.querySelectorAll('.error').forEach(el => el.textContent = '');
+        try {
+            const response = await fetch('{% url "register" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken  // Добавляем CSRF токен в заголовки
+                }
+            });
             
-            for (const [field, errors] of Object.entries(result.errors)) {
-                const errorElement = document.getElementById(`${field}-error`);
-                if (errorElement) {
-                    errorElement.textContent = errors.join(', ');
+            const result = await response.json();
+            
+            if (result.success) {
+                window.location.href = result.redirect_url;
+            } else {
+                // Очищаем предыдущие ошибки
+                document.querySelectorAll('.error').forEach(el => el.textContent = '');
+                
+                // Показываем новые ошибки
+                for (const [field, errors] of Object.entries(result.errors)) {
+                    const errorElement = document.getElementById(`${field}-error`);
+                    if (errorElement) {
+                        errorElement.textContent = Array.isArray(errors) ? errors.join(', ') : errors;
+                    }
                 }
             }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            alert('Произошла ошибка при регистрации');
         }
     });
 

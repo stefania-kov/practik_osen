@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path
 from test_site import views
 from django.conf import settings
-from django.conf.urls.static import static  # Добавьте этот импорт
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,6 +28,14 @@ urlpatterns = [
     path('register/', views.register_view, name='register'),
     path('login/', views.login_view, name='login'),
     path('product/<slug:slug>/', views.product_detail, name='product_detail'),
+    
+    # Корзина и заказы
+    path('cart/', views.cart_view, name='cart_view'),
+    path('cart/add/<int:product_id>/', views.add_to_cart, name='add_to_cart'),
+    path('cart/remove/<int:product_id>/', views.remove_from_cart, name='remove_from_cart'),
+    path('cart/delete/<int:product_id>/', views.delete_from_cart, name='delete_from_cart'),
+    path('cart/create-order/', views.create_order, name='create_order'),
+    path('order/success/<int:order_id>/', views.order_success, name='order_success'),
 ]
 
 if settings.DEBUG:
