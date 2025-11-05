@@ -82,7 +82,7 @@ class Product(models.Model):
     production_year = models.IntegerField(verbose_name='Год выпуска')
     model = models.CharField(max_length=100, verbose_name='Модель')
     in_stock = models.BooleanField(default=True, verbose_name='В наличии')
-    stock = models.IntegerField(default=0, verbose_name='Количество на складе')  # Добавили поле stock
+    stock = models.IntegerField(default=0, verbose_name='Количество на складе')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата добавления')
     
     def __str__(self):
@@ -155,6 +155,10 @@ class Order(models.Model):
     
     def __str__(self):
         return f"Заказ #{self.id} от {self.user.login}"
+    
+    def get_total_quantity(self):
+        """Общее количество товаров в заказе"""
+        return sum(item.quantity for item in self.items.all())
     
     class Meta:
         verbose_name = 'Заказ'

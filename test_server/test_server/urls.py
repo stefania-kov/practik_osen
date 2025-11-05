@@ -19,6 +19,7 @@ from django.urls import path
 from test_site import views
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -27,6 +28,7 @@ urlpatterns = [
     path('contacts/', views.contacts, name='contacts'),
     path('register/', views.register_view, name='register'),
     path('login/', views.login_view, name='login'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
     path('product/<slug:slug>/', views.product_detail, name='product_detail'),
     
     # Корзина и заказы
@@ -36,6 +38,9 @@ urlpatterns = [
     path('cart/delete/<int:product_id>/', views.delete_from_cart, name='delete_from_cart'),
     path('cart/create-order/', views.create_order, name='create_order'),
     path('order/success/<int:order_id>/', views.order_success, name='order_success'),
+
+    path('cabinet/', views.cabinet, name='cabinet'),
+    path('cabinet/order/delete/<int:order_id>/', views.delete_order, name='delete_order'),
 ]
 
 if settings.DEBUG:

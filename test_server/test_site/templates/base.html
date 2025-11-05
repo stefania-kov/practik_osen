@@ -57,30 +57,45 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'contacts' %}">Контакты</a>
                     </li>
+                    
+                    <!-- Показываем личный кабинет и корзину только авторизованным пользователям -->
+                    {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'cabinet' %}">Личный кабинет</a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'cart_view' %}">
                             Корзина 
-                            {% if user.is_authenticated %}
-                                <span class="badge bg-primary" id="cart-count">
-                                    {{ user.cart.get_total_quantity|default:0 }}
-                                </span>
-                            {% endif %}
+                            <span class="badge bg-primary" id="cart-count">
+                                {{ user.cart.get_total_quantity|default:0 }}
+                            </span>
                         </a>
                     </li>
+                    {% endif %}
                 </ul>
                 
                 <div class="d-flex">
-                    <a href="{% url 'login' %}" class="btn btn-outline-primary me-2">
-                        <i></i> Авторизация
-                    </a>
-                    <a href="{% url 'register' %}" class="btn btn-primary">
-                        <i></i> Регистрация
-                    </a>
+                    {% if user.is_authenticated %}
+                        <!-- Для авторизованных пользователей показываем кнопку выхода -->
+                        <form method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger">
+                                <i></i> Выйти
+                            </button>
+                        </form>
+                    {% else %}
+                        <!-- Для неавторизованных пользователей показываем кнопки входа и регистрации -->
+                        <a href="{% url 'login' %}" class="btn btn-outline-primary me-2">
+                            <i></i> Авторизация
+                        </a>
+                        <a href="{% url 'register' %}" class="btn btn-primary">
+                            <i></i> Регистрация
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </nav>
-
 
     <main class="container">
         {% block content %}
@@ -95,4 +110,4 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html> 
+</html>

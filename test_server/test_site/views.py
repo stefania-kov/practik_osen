@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.contrib import messages
 from .forms import RegistrationForm, LoginForm
 from django.db.models import Q
 from .models import Product, Category, Cart, CartItem, Order, OrderItem
@@ -80,6 +81,51 @@ def product_detail(request, slug):
 
 def contacts(request):
     return render(request, 'contacts.html')
+
+@login_required
+def cabinet(request):
+    """Личный кабинет пользователя с заказами"""
+    # Получаем заказы пользователя, отсортированные от новых к старым
+    orders = Order.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Статистика - исправляем названия статусов согласно вашей модели
+    orders_count = orders.count()
+    completed_orders = orders.filter(status='completed').count()
+    processing_orders = orders.filter(status='processing').count()
+    pending_orders = orders.filter(status='pending').count()
+    
+    context = {
+        'orders': orders,
+        'orders_count': orders_count,
+        'completed_orders': completed_orders,
+        'processing_orders': processing_orders,
+        'pending_orders': pending_orders,
+    }
+    return render(request, 'cabinet.html', context)
+
+@login_required
+def delete_order(request, order_id):
+    """Удаление заказа (только pending заказы)"""
+    print(f"Попытка удалить заказ #{order_id}")  # Отладочная информация
+    
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    print(f"Статус заказа: {order.status}")  # Отладочная информация
+    
+    # Проверяем, что заказ можно удалить (только pending)
+    if order.status != 'pending':
+        messages.error(request, 'Можно удалять только заказы со статусом "Ожидает обработки"')
+        print("Заказ нельзя удалить - неверный статус")  # Отладочная информация
+        return redirect('cabinet')
+    
+    if request.method == 'POST':
+        print("POST запрос получен, удаляем заказ...")  # Отладочная информация
+        order.delete()
+        messages.success(request, f'Заказ #{order_id} успешно удален')
+        print("Заказ удален")  # Отладочная информация
+        return redirect('cabinet')
+    
+    print("Не POST запрос")  # Отладочная информация
+    return redirect('cabinet')
 
 # ФУНКЦИИ КОРЗИНЫ
 @login_required
