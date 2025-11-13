@@ -78,16 +78,16 @@
                             <div class="stat-label">Всего заказов</div>
                         </div>
                         <div class="stat-item text-center">
-                            <div class="stat-number text-success">{{ completed_orders }}</div>
-                            <div class="stat-label">Завершено</div>
+                            <div class="stat-number text-success">{{ confirmed_orders }}</div>
+                            <div class="stat-label">Подтверждено</div>
                         </div>
                         <div class="stat-item text-center">
-                            <div class="stat-number text-warning">{{ processing_orders }}</div>
-                            <div class="stat-label">В обработке</div>
+                            <div class="stat-number text-warning">{{ new_orders }}</div>
+                            <div class="stat-label">Новых</div>
                         </div>
                         <div class="stat-item text-center">
-                            <div class="stat-number text-info">{{ pending_orders }}</div>
-                            <div class="stat-label">Ожидают</div>
+                            <div class="stat-number text-danger">{{ cancelled_orders }}</div>
+                            <div class="stat-label">Отменено</div>
                         </div>
                     </div>
                 </div>
@@ -116,6 +116,7 @@
                                     <th>Позиций / Штук</th>
                                     <th>Сумма</th>
                                     <th>Статус</th>
+                                    <th>Причина отказа</th>
                                     <th>Действия</th>
                                 </tr>
                             </thead>
@@ -151,7 +152,21 @@
                                         <span class="badge status-{{ order.status }}">{{ order.get_status_display }}</span>
                                     </td>
                                     <td>
-                                        {% if order.status == 'pending' %}
+                                        {% if order.status == 'cancelled' and order.cancellation_reason %}
+                                        <div class="cancellation-reason">
+                                            <small class="text-danger">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                {{ order.cancellation_reason }}
+                                            </small>
+                                        </div>
+                                        {% elif order.status == 'cancelled' %}
+                                        <small class="text-muted">Причина не указана</small>
+                                        {% else %}
+                                        <small class="text-muted">—</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if order.status == 'new' %}
                                         <form method="post" action="{% url 'delete_order' order.id %}">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-sm btn-outline-danger" 
@@ -180,6 +195,24 @@
                                 <span class="badge status-{{ order.status }}">{{ order.get_status_display }}</span>
                             </div>
                             <small class="text-muted">{{ order.created_at|date:"d.m.Y H:i" }}</small>
+                            
+                            <!-- Причина отказа для мобильной версии -->
+                            {% if order.status == 'cancelled' and order.cancellation_reason %}
+                            <div class="mt-2 p-2 cancellation-reason-mobile">
+                                <small class="text-danger">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                    <strong>Причина отмены:</strong><br>
+                                    {{ order.cancellation_reason }}
+                                </small>
+                            </div>
+                            {% elif order.status == 'cancelled' %}
+                            <div class="mt-2 p-2 cancellation-reason-mobile">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i>
+                                    Причина отмены не указана
+                                </small>
+                            </div>
+                            {% endif %}
                         </div>
                         <div class="card-body">
                             <div class="mb-2">
@@ -205,7 +238,7 @@
                                 <span>Общая сумма:</span>
                                 <strong class="text-primary">{{ order.total_price }} ₽</strong>
                             </div>
-                            {% if order.status == 'pending' %}
+                            {% if order.status == 'new' %}
                             <form method="post" action="{% url 'delete_order' order.id %}">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-sm btn-outline-danger w-100" 
@@ -231,11 +264,26 @@
 </div>
 
 <style>
-/* Статусы заказов */
-.status-pending { background-color: #0dcaf0; color: white; }
-.status-processing { background-color: #ffc107; color: black; }
-.status-completed { background-color: #198754; color: white; }
+/* Статусы заказов - только 3 варианта */
+.status-new { background-color: #0dcaf0; color: white; }
+.status-confirmed { background-color: #198754; color: white; }
 .status-cancelled { background-color: #dc3545; color: white; }
+
+/* Причина отказа */
+.cancellation-reason {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    padding: 8px 12px;
+    max-width: 250px;
+}
+
+.cancellation-reason-mobile {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    margin-top: 8px;
+}
 
 /* Информация пользователя */
 .user-info .info-item {
@@ -262,6 +310,12 @@
     height: 100%;
 }
 
+.stat-item {
+    padding: 10px;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+
 .stat-number {
     font-size: 2rem;
     font-weight: bold;
@@ -271,6 +325,7 @@
 .stat-label {
     font-size: 0.9rem;
     color: #6c757d;
+    font-weight: 500;
 }
 
 /* Заказы */
@@ -296,6 +351,7 @@
     border-top: none;
     font-weight: 600;
     color: #2c3e50;
+    background-color: #f8f9fa;
 }
 
 .card {
@@ -346,6 +402,14 @@
     .stat-number {
         font-size: 1.5rem;
     }
+    
+    .stat-item {
+        padding: 8px;
+    }
+    
+    .cancellation-reason {
+        max-width: 100%;
+    }
 }
 
 @media (max-width: 576px) {
@@ -365,6 +429,13 @@
         min-width: auto;
         margin-bottom: 5px;
     }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
 }
+
+/* Иконки Bootstrap Icons */
+@import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css");
 </style>
 {% endblock %}

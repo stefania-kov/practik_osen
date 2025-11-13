@@ -88,44 +88,43 @@ def cabinet(request):
     # Получаем заказы пользователя, отсортированные от новых к старым
     orders = Order.objects.filter(user=request.user).order_by('-created_at')
     
-    # Статистика - исправляем названия статусов согласно вашей модели
+    # Статистика согласно новой модели Order (только 3 статуса)
     orders_count = orders.count()
-    completed_orders = orders.filter(status='completed').count()
-    processing_orders = orders.filter(status='processing').count()
-    pending_orders = orders.filter(status='pending').count()
+    confirmed_orders = orders.filter(status='confirmed').count()
+    cancelled_orders = orders.filter(status='cancelled').count()
+    new_orders = orders.filter(status='new').count()
     
     context = {
         'orders': orders,
         'orders_count': orders_count,
-        'completed_orders': completed_orders,
-        'processing_orders': processing_orders,
-        'pending_orders': pending_orders,
+        'confirmed_orders': confirmed_orders,
+        'cancelled_orders': cancelled_orders,
+        'new_orders': new_orders,
     }
     return render(request, 'cabinet.html', context)
 
 @login_required
 def delete_order(request, order_id):
-    """Удаление заказа (только pending заказы)"""
-    print(f"Попытка удалить заказ #{order_id}")  # Отладочная информация
-    
-    order = get_object_or_404(Order, id=order_id, user=request.user)
-    print(f"Статус заказа: {order.status}")  # Отладочная информация
-    
-    # Проверяем, что заказ можно удалить (только pending)
-    if order.status != 'pending':
-        messages.error(request, 'Можно удалять только заказы со статусом "Ожидает обработки"')
-        print("Заказ нельзя удалить - неверный статус")  # Отладочная информация
+    """Удаление заказа (только новые заказы)"""
+    try:
+        order = Order.objects.get(id=order_id, user=request.user)
+        
+        if order.status != 'new':
+            messages.error(request, 'Можно удалять только заказы со статусом "Новый"')
+            return redirect('cabinet')
+        
+        if request.method == 'POST':
+            order.delete()
+            messages.success(request, f'Заказ #{order_id} успешно удален')
+            return redirect('cabinet')
+        else:
+            messages.error(request, 'Неверный метод запроса')
+            return redirect('cabinet')
+            
+    except Order.DoesNotExist:
+        messages.error(request, 'Заказ не найден')
         return redirect('cabinet')
-    
-    if request.method == 'POST':
-        print("POST запрос получен, удаляем заказ...")  # Отладочная информация
-        order.delete()
-        messages.success(request, f'Заказ #{order_id} успешно удален')
-        print("Заказ удален")  # Отладочная информация
-        return redirect('cabinet')
-    
-    print("Не POST запрос")  # Отладочная информация
-    return redirect('cabinet')
+
 
 # ФУНКЦИИ КОРЗИНЫ
 @login_required
@@ -149,27 +148,54 @@ def add_to_cart(request, product_id):
         product = get_object_or_404(Product, id=product_id, in_stock=True)
         cart, created = Cart.objects.get_or_create(user=request.user)
         
+        # Получаем количество из запроса
+        quantity = int(request.POST.get('quantity', 1))
+        
+        # Проверяем доступное количество
+        if quantity > product.stock:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False, 
+                    'error': f'Недостаточно товара в наличии. Доступно: {product.stock} шт.'
+                })
+            messages.error(request, f'Недостаточно товара в наличии. Доступно: {product.stock} шт.')
+            return redirect('product_detail', slug=product.slug)
+        
         cart_item, created = CartItem.objects.get_or_create(
             cart=cart, 
             product=product
         )
         
         if not created:
-            if cart_item.quantity < product.stock:
-                cart_item.quantity += 1
+            # Если товар уже в корзине, увеличиваем количество
+            new_quantity = cart_item.quantity + quantity
+            if new_quantity <= product.stock:
+                cart_item.quantity = new_quantity
                 cart_item.save()
+            else:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': False, 
+                        'error': f'Недостаточно товара в наличии. Всего можно добавить: {product.stock - cart_item.quantity} шт.'
+                    })
+                messages.error(request, f'Недостаточно товара в наличии. Всего можно добавить: {product.stock - cart_item.quantity} шт.')
+                return redirect('product_detail', slug=product.slug)
         else:
-            cart_item.quantity = 1
+            # Если товара нет в корзине, устанавливаем выбранное количество
+            cart_item.quantity = quantity
             cart_item.save()
         
+        # Получаем общее количество товаров в корзине
+        total_quantity = sum(item.quantity for item in CartItem.objects.filter(cart=cart))
+        
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            cart_items_count = CartItem.objects.filter(cart=cart).count()
             return JsonResponse({
                 'success': True, 
-                'message': 'Товар добавлен в корзину',
-                'cart_items_count': cart_items_count
+                'message': f'Товар "{product.name}" добавлен в корзину ({quantity} шт.)',
+                'cart_items_count': total_quantity
             })
         
+        messages.success(request, f'Товар "{product.name}" добавлен в корзину ({quantity} шт.)')
         return redirect('cart_view')
     
     return redirect('catalog')

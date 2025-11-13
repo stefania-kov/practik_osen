@@ -142,16 +142,16 @@ class CartItem(models.Model):
 
 class Order(models.Model):
     STATUS_CHOICES = [
-        ('pending', 'Ожидает обработки'),
-        ('processing', 'В обработке'),
-        ('completed', 'Завершен'),
-        ('cancelled', 'Отменен'),
+        ('new', 'Новый'),
+        ('confirmed', 'Подтвержденный'),
+        ('cancelled', 'Отмененный'),
     ]
     
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, verbose_name='Пользователь')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
     total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name='Общая стоимость')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='Статус заказа')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new', verbose_name='Статус заказа')
+    cancellation_reason = models.TextField(blank=True, null=True, verbose_name='Причина отказа')  # НОВОЕ ПОЛЕ
     
     def __str__(self):
         return f"Заказ #{self.id} от {self.user.login}"

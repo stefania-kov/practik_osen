@@ -1,0 +1,348 @@
+<!-- templates/admin/index.html -->
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+:root {
+    --primary: #667eea;
+    --primary-dark: #764ba2;
+    --success: #28a745;
+    --warning: #ffc107;
+    --danger: #dc3545;
+    --dark: #2c3e50;
+    --light: #f8f9fa;
+}
+
+/* Скрываем стандартные модули */
+#content-main > .module {
+    display: none !important;
+}
+
+/* Основной контейнер */
+.admin-dashboard {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+/* Карточки приложений */
+.app-card {
+    background: white;
+    border-radius: 15px;
+    padding: 0;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.app-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+}
+
+/* Улучшенные заголовки с градиентами */
+.app-header {
+    padding: 25px 30px;
+    margin: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.app-header.orders { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.app-header.products { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); }
+.app-header.categories { background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); }
+.app-header.carts { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); }
+.app-header.users { background: linear-gradient(135deg, #6f42c1 0%, #8e44ad 100%); }
+.app-header.order-items { background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%); }
+.app-header.cart-items { background: linear-gradient(135deg, #fd7e14 0%, #e74c3c 100%); }
+
+.app-title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: white;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 2;
+}
+
+.app-actions {
+    padding: 25px 30px;
+    display: flex;
+    gap: 15px;
+    background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+}
+
+/* Улучшенные кнопки */
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    color: white;
+    text-decoration: none;
+    border-radius: 12px;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    flex: 1;
+    justify-content: center;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.action-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.action-btn:hover::before {
+    left: 100%;
+}
+
+.action-btn.add {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.action-btn.add:hover {
+    background: linear-gradient(135deg, #218838 0%, #1e9e8a 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+}
+
+/* Яркая кнопка "Изменить" */
+.action-btn.change {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    color: white;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.action-btn.change:hover {
+    background: linear-gradient(135deg, #ff5252 0%, #d63031 100%);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 10px 30px rgba(255, 107, 107, 0.5);
+}
+
+/* Анимации */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dashboard-grid > * {
+    animation: fadeInUp 0.6s ease forwards;
+}
+
+.dashboard-grid > *:nth-child(1) { animation-delay: 0.1s; }
+.dashboard-grid > *:nth-child(2) { animation-delay: 0.2s; }
+.dashboard-grid > *:nth-child(3) { animation-delay: 0.3s; }
+.dashboard-grid > *:nth-child(4) { animation-delay: 0.4s; }
+.dashboard-grid > *:nth-child(5) { animation-delay: 0.5s; }
+.dashboard-grid > *:nth-child(6) { animation-delay: 0.6s; }
+.dashboard-grid > *:nth-child(7) { animation-delay: 0.7s; }
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .app-actions {
+        flex-direction: column;
+        padding: 20px;
+    }
+    
+    .app-header {
+        padding: 20px 25px;
+    }
+    
+    .app-title {
+        font-size: 1.2rem;
+    }
+}
+
+/* Дополнительные эффекты для карточек */
+.app-card {
+    position: relative;
+}
+
+.app-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, 
+        #667eea, #28a745, #ffc107, #dc3545, 
+        #6f42c1, #20c997, #fd7e14);
+    background-size: 200% 100%;
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main" class="admin-dashboard">
+    <!-- Основные приложения -->
+    <div class="dashboard-grid">
+        <!-- Заказы -->
+        <div class="app-card orders">
+            <div class="app-header orders">
+                <h2 class="app-title">📦 Заказы</h2>
+            </div>
+            <div class="app-actions">
+                <a href="/admin/test_site/order/add/" class="action-btn add">
+                    <span>+</span>
+                    Добавить
+                </a>
+                <a href="/admin/test_site/order/" class="action-btn change">
+                    <span>⚙️</span>
+                    Изменить
+                </a>
+            </div>
+        </div>
+
+        <!-- Товары -->
+        <div class="app-card products">
+            <div class="app-header products">
+                <h2 class="app-title">🛍️ Товары</h2>
+            </div>
+            <div class="app-actions">
+                <a href="/admin/test_site/product/add/" class="action-btn add">
+                    <span>+</span>
+                    Добавить
+                </a>
+                <a href="/admin/test_site/product/" class="action-btn change">
+                    <span>⚙️</span>
+                    Изменить
+                </a>
+            </div>
+        </div>
+
+        <!-- Категории -->
+        <div class="app-card categories">
+            <div class="app-header categories">
+                <h2 class="app-title">📁 Категории</h2>
+            </div>
+            <div class="app-actions">
+                <a href="/admin/test_site/category/add/" class="action-btn add">
+                    <span>+</span>
+                    Добавить
+                </a>
+                <a href="/admin/test_site/category/" class="action-btn change">
+                    <span>⚙️</span>
+                    Изменить
+                </a>
+            </div>
+        </div>
+
+        <!-- Корзины -->
+        <div class="app-card carts">
+            <div class="app-header carts">
+                <h2 class="app-title">🛒 Корзины</h2>
+            </div>
+            <div class="app-actions">
+                <a href="/admin/test_site/cart/add/" class="action-btn add">
+                    <span>+</span>
+                    Добавить
+                </a>
+                <a href="/admin/test_site/cart/" class="action-btn change">
+                    <span>⚙️</span>
+                    Изменить
+                </a>
+            </div>
+        </div>
+
+        <!-- Пользователи -->
+        <div class="app-card users">
+            <div class="app-header users">
+                <h2 class="app-title">👥 Пользователи</h2>
+            </div>
+            <div class="app-actions">
+                <a href="/admin/test_site/customuser/add/" class="action-btn add">
+                    <span>+</span>
+                    Добавить
+                </a>
+                <a href="/admin/test_site/customuser/" class="action-btn change">
+                    <span>⚙️</span>
+                    Изменить
+                </a>
+            </div>
+        </div>
+
+        <!-- Элементы заказа -->
+        <div class="app-card order-items">
+            <div class="app-header order-items">
+                <h2 class="app-title">📋 Элементы заказа</h2>
+            </div>
+            <div class="app-actions">
+                <a href="/admin/test_site/orderitem/add/" class="action-btn add">
+                    <span>+</span>
+                    Добавить
+                </a>
+                <a href="/admin/test_site/orderitem/" class="action-btn change">
+                    <span>⚙️</span>
+                    Изменить
+                </a>
+            </div>
+        </div>
+
+        <!-- Элементы корзины -->
+        <div class="app-card cart-items">
+            <div class="app-header cart-items">
+                <h2 class="app-title">🛍️ Элементы корзины</h2>
+            </div>
+            <div class="app-actions">
+                <a href="/admin/test_site/cartitem/add/" class="action-btn add">
+                    <span>+</span>
+                    Добавить
+                </a>
+                <a href="/admin/test_site/cartitem/" class="action-btn change">
+                    <span>⚙️</span>
+                    Изменить
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Скрываем стандартные модули -->
+    <div style="display: none;">
+        {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+    </div>
+</div>
+{% endblock %}
